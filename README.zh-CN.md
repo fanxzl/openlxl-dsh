@@ -19,6 +19,7 @@
 - **可提炼、可确认的风格**：风格配置（`style-profile.json`）含维度 / must-do / avoid / 置信度；候选风格从参考片段 + 读者感受提取，**用户确认后才落盘**（`engstory_extract_style` → `engstory_confirm_style`），绝不自动覆盖。
 - **按需上下文组装**：`engstory_build_context` 把「风格 + 卷/弧总纲 + 事实账本 + 当前状态 + 目标词」合并成一个有界的写作上下文包。
 - **章节戏剧结构**：每章须完成「立即接场 → 本章目标 → 阻力 → 选择 → 后果 → 具体钩子」，并带硬性负面约束（禁止重复天气开场 / 随机新增人物 / 空泛悬念 / 梦境解释等）。
+- **写作工艺常驻**：插件通过 DSH 提示词注册表登记独立系统提示段（`plugins/craft.md` → `engstory:craft`）——起草前六问自查、起草三纪律（不重复自己最近的开场 / 目标词按遗忘分排戏剧权重 / 结构是骨架不是句式）、起草后七维自评与去腔诊断，每个会话始终在场，不依赖技能按需加载。
 - **严格顺序闸门**：批次状态机（`TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE`）保证流程不可跳步：没有用户反馈不更新记忆，没有用户确认不写新词。
 - **词形归并**：`sought → seek`、`stood → stand`、`blue|蓝色` 多义词独立计数。
 - **指纹去重**：同一篇文本重复标记会被跳过，防止词频虚高。
@@ -32,7 +33,8 @@ openlxl/
 ├── CHANGELOG.md                  # 版本变更记录
 ├── LICENSE                       # MIT 许可
 └── plugins/
-│   └── engstory-tools.mjs        # 9 个确定性工具（注册给 DSH Agent）
+│   ├── engstory-tools.mjs        # 9 个确定性工具（注册给 DSH Agent）
+│   └── craft.md                  # 写作工艺常驻系统提示段
 ├── skills/
 │   └── engstory-domain/
 │       ├── SKILL.md              # 领域规则 + 固定输出模板
@@ -237,4 +239,4 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 
 - 本仓库代码：MIT（见 [LICENSE](LICENSE)）。
 - vendored 依赖：[py-fsrs](https://github.com/open-spaced-repetition/py-fsrs)（MIT，见 `vendor/fsrs/LICENSE`）、[typing-extensions](https://github.com/python/typing_extensions)（PSF-2.0 / Apache-2.0）。
-- 致谢：记忆调度参照 [Anki](https://apps.ankiweb.net/) 的开源 [FSRS 间隔重复算法](https://github.com/open-spaced-repetition/fsrs4anki)。
+- 致谢：记忆调度参照 [Anki](https://apps.ankiweb.net/) 的开源 [FSRS 间隔重复算法](https://github.com/open-spaced-repetition/fsrs4anki)；写作工艺（评审维度、去腔诊断、起草前自查）灵感来自 [InkOS](https://github.com/Narcooo/inkos)——仅借鉴思路，本仓库全部文字与代码均为原创，保持 MIT。

@@ -20,6 +20,7 @@ This repository is an **agent preset** for [DeepSeek Harness (DSH)](https://gith
 - **Extractable, confirmable style**: a style profile (`style-profile.json`) holds dimensions / must-do / avoid / confidence; candidate styles are extracted from reference fragments + reader impressions and only persisted after you confirm (`engstory_extract_style` → `engstory_confirm_style`) — never auto-overwritten.
 - **On-demand context assembly**: `engstory_build_context` merges style + plot outline + facts + current state + target words into a single bounded writing-context package.
 - **Dramatic chapter structure**: each chapter is required to complete "scene entry → chapter goal → obstacle → choice → consequence → concrete hook", with hard negative constraints (no repeated weather openings, no random new characters, no empty suspense, no dream explanations).
+- **Always-on writing craft**: the plugin registers a dedicated system-prompt section (`plugins/craft.md` → `engstory:craft`) through the DSH prompt registry, so the writing discipline — six pre-draft checks, three drafting rules (never repeat your own recent openings / target words get dramatic weight by forget score / structure is a skeleton, not a sentence pattern), and a seven-dimension self-review with de-cliché diagnosis — stays present in every session instead of depending on on-demand skill loading.
 - **Strict batch state machine**: `TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE` — no memory update without user feedback, no new words without user confirmation.
 - **Morphological lemmatization**: `sought → seek`, `stood → stand`; polysemous words are tracked as independent entries (`blue|蓝色`, `blue|忧伤`).
 - **Fingerprint dedup**: re-marking the same text is skipped automatically to prevent inflated usage counts.
@@ -34,7 +35,8 @@ openlxl/
 ├── CHANGELOG.md                  # version changelog
 ├── LICENSE                       # MIT license
 ├── plugins/
-│   └── engstory-tools.mjs        # 9 deterministic tools (registered to the DSH agent)
+│   ├── engstory-tools.mjs        # 9 deterministic tools (registered to the DSH agent)
+│   └── craft.md                  # always-on writing-craft system-prompt section
 ├── skills/
 │   └── engstory-domain/
 │       ├── SKILL.md              # domain rules + fixed reply templates
@@ -239,4 +241,4 @@ Defaults to `state.json` beside the learning vocabulary (`ENGSTORY_STATE` overri
 
 - This repository: MIT (see [LICENSE](LICENSE)).
 - Vendored dependencies: [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs) (MIT, see `vendor/fsrs/LICENSE`), [typing-extensions](https://github.com/python/typing_extensions) (PSF-2.0 / Apache-2.0).
-- Credits: memory scheduling references [Anki](https://apps.ankiweb.net/)'s open-source [FSRS spaced-repetition algorithm](https://github.com/open-spaced-repetition/fsrs4anki).
+- Credits: memory scheduling references [Anki](https://apps.ankiweb.net/)'s open-source [FSRS spaced-repetition algorithm](https://github.com/open-spaced-repetition/fsrs4anki); the writing-craft discipline (review dimensions, de-cliché diagnosis, pre-draft checks) was inspired by [InkOS](https://github.com/Narcooo/inkos) — ideas only, all wording and code in this repository are original and remain MIT.

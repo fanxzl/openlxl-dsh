@@ -2,6 +2,23 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.1.4] - 2026-09-18
+
+### 新增
+
+- **写作工艺系统提示段**：`engstory-tools.mjs` 声明 `inject: ['tools', 'systemPrompt']`，通过 `ctx.systemPrompt.section()` 注册 `engstory:craft` 段（order 50，persona 之后、工具指导之前），写作工艺始终在场，不再依赖技能按需加载。
+- 工艺文本独立为 `plugins/craft.md`：起草前六问自查、起草三纪律（别重复自己 / 目标词按遗忘分排戏 / 结构是骨架不是句式）、起草后七维自评与去腔诊断（证据+影响+修法，改写至多一次）。读不到该文件时挂载直接失败（fail loud）。
+- `engstory_commit_story` 描述新增提交前须完成工艺自评改写的提示。
+- 鸣谢：写作工艺灵感来自 [InkOS](https://github.com/Narcooo/inkos)（仅借鉴思路，文本与代码均为原创）。
+
+### 修复
+
+- **Python 解释器平台感知**：`execFile` 写死 `python` 改为 Windows 用 `python`、其他平台用 `python3`——服务器 `/usr/local/bin/python` 是 py2.7，写死会让全部脚本失败（此前只在服务器副本修过，本次收入 repo，消灭 repo↔服务器分歧）。
+
+### 变更
+
+- `写故事` 技能第 4 步增加指针：写作与自评纪律以系统提示写作工艺段为准。
+
 ## [0.1.3] - 2026-08-22
 
 ### 新增

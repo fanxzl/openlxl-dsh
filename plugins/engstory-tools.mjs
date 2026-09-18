@@ -1,19 +1,24 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 const execFileAsync = promisify(execFile)
 
+// 平台感知解释器：Windows 用 python，Linux/macOS 用 python3
+// （服务器 /usr/local/bin/python 可能是 py2.7，直接写死 python 会让全部脚本挂掉）
+const PYTHON_BIN = process.platform === 'win32' ? 'python' : 'python3'
+
 export const name = 'engstory-tools'
-export const inject = ['tools']
+export const inject = ['tools', 'systemPrompt']
 
 function runPython(script, args, signal, fsrsRoot) {
   // PYTHONIOENCODING=utf-8：强制 Python 以 UTF-8 输出。否则被管道捕获 stdout 时
   // Python 会用 GBK(locale) 编码，中文 JSON（摘要/线索/角色）会被 Node 误解码。
   const env = { ...process.env, PYTHONPATH: fsrsRoot, PYTHONIOENCODING: 'utf-8' }
-  return execFileAsync('python', [script, ...args], {
+  return execFileAsync(PYTHON_BIN, [script, ...args], {
     windowsHide: true,
     signal,
     env,
@@ -64,6 +69,15 @@ export function apply(ctx) {
   const script = (name) => fileURLToPath(new URL(`scripts/${name}`, root))
 
   const run = (name, args, signal) => runPython(script(name), args, signal, fsrsRoot)
+
+  // 写作工艺段：始终在场的系统提示段（order 50，persona=0 之后、工具指导 100+ 之前）。
+  // 读不到 craft.md 直接抛错——挂载被拒好过一个静默丢了工艺的 preset。
+  const craftText = readFileSync(new URL('./craft.md', import.meta.url), 'utf8')
+  ctx.effect(() => ctx.systemPrompt.section({
+    name: 'engstory:craft',
+    order: 50,
+    text: craftText,
+  }), 'engstory.craft')
 
   ctx.tools.register({
     name: 'engstory_select_targets',
@@ -173,7 +187,7 @@ export function apply(ctx) {
 
   ctx.tools.register({
     name: 'engstory_commit_story',
-    description: 'Audit then commit a story: save only if the audit passes, record usage, update storyline continuity, and open the feedback phase.',
+    description: 'Audit then commit a story: save only if the audit passes, record usage, update storyline continuity, and open the feedback phase. Before committing, complete the craft self-review and one revision pass required by the always-on writing-craft section.',
     parameters: {
       type: 'object',
       properties: {
