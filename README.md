@@ -21,6 +21,7 @@ This repository is an **agent preset** for [DeepSeek Harness (DSH)](https://gith
 - **On-demand context assembly**: `engstory_build_context` merges style + plot outline + facts + current state + target words into a single bounded writing-context package.
 - **Dramatic chapter structure**: each chapter is required to complete "scene entry → chapter goal → obstacle → choice → consequence → concrete hook", with hard negative constraints (no repeated weather openings, no random new characters, no empty suspense, no dream explanations).
 - **Always-on writing craft**: the plugin registers a dedicated system-prompt section (`plugins/craft.md` → `engstory:craft`) through the DSH prompt registry, so the writing discipline — six pre-draft checks, three drafting rules (never repeat your own recent openings / target words get dramatic weight by forget score / structure is a skeleton, not a sentence pattern), and a seven-dimension self-review with de-cliché diagnosis — stays present in every session instead of depending on on-demand skill loading.
+- **Guide mode (`engstory-guide` skill)**: when the user asks "how do I start / what am I missing", it first runs `engstory_doctor` for a deterministic, read-only check of the real environment, then explains in plain language what goes into each empty slot; when the user wants to tune the effect, a built-in parameter map points to the exact knob (target count / story length / style / plot direction…) and explains what each parameter does and what changes after the tweak.
 - **Strict batch state machine**: `TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE` — no memory update without user feedback, no new words without user confirmation.
 - **Morphological lemmatization**: `sought → seek`, `stood → stand`; polysemous words are tracked as independent entries (`blue|蓝色`, `blue|忧伤`).
 - **Fingerprint dedup**: re-marking the same text is skipped automatically to prevent inflated usage counts.
@@ -35,9 +36,11 @@ openlxl/
 ├── CHANGELOG.md                  # version changelog
 ├── LICENSE                       # MIT license
 ├── plugins/
-│   ├── engstory-tools.mjs        # 9 deterministic tools (registered to the DSH agent)
+│   ├── engstory-tools.mjs        # 10 deterministic tools (registered to the DSH agent)
 │   └── craft.md                  # always-on writing-craft system-prompt section
 ├── skills/
+│   ├── engstory-guide/
+│   │   └── SKILL.md              # guide mode: setup & tuning guidance (loaded on demand)
 │   └── engstory-domain/
 │       ├── SKILL.md              # domain rules + fixed reply templates
 │       ├── 检索/SKILL.md         # sub-skill: pick targets (CLI reference)
@@ -45,12 +48,13 @@ openlxl/
 │       ├── 更定频率/SKILL.md     # sub-skill: mark usage (CLI reference)
 │       ├── 反馈/SKILL.md         # sub-skill: feedback (CLI reference)
 │       ├── 写入词汇/SKILL.md     # sub-skill: write new words (CLI reference)
-│       └── scripts/              # 14 Python scripts (pure stdlib)
+│       └── scripts/              # 15 Python scripts (pure stdlib)
 │           ├── vocab_core.py     #   vocab IO / lemmatization / FSRS forget score
 │           ├── pick.py           #   pick targets (due-driven four queues)
 │           ├── mark.py           #   mark usage statistics
 │           ├── feedback.py       #   apply feedback (updates FSRS)
 │           ├── add.py            #   write new words
+│           ├── doctor.py         #   environment check (read-only, facts layer of guide mode)
 │           ├── vocab_distill.py  #   build the allowed vocabulary package
 │           ├── story_audit.py    #   story audit
 │           ├── range_lib.py      #   range vocabulary / function-word whitelist
@@ -135,7 +139,7 @@ Story loop (strict order):
   ① select_targets      pick 7 target words from the learning vocabulary   → TARGETS_SELECTED
   ② build_context       assemble style + plot + facts + current state + targets
   ③ prepare_story_vocab build the allowed vocabulary package
-  ④ write a 300–500 word English-only story (target words bolded, dramatic structure)
+  ④ write a 300–400 word English-only story (target words bolded, dramatic structure)
   ⑤ audit_story         commit only if the audit passes; rewrite at most twice
   ⑥ commit_story        save story + mark usage + advance storyline/ledger → WAITING_FEEDBACK
   ⑦ apply_feedback      update FSRS only after the user reports            → WAITING_WORD_CONFIRMATION / IDLE
@@ -153,6 +157,7 @@ Story loop (strict order):
 | `engstory_write_learning_words` | add.py | write new words | after explicit confirmation |
 | `engstory_extract_style` | style.py | extract a candidate style (no write) | on reference fragments |
 | `engstory_confirm_style` | style.py | persist a confirmed style profile | after user confirms |
+| `engstory_doctor` | doctor.py | read-only environment check → setup checklist | on setup/config questions |
 
 ## Data Files
 

@@ -170,6 +170,8 @@ export function apply(ctx) {
         targets: { type: 'string', description: 'Comma-separated exact target keys.' },
         range: { type: 'string', description: 'Absolute range vocabulary path.' },
         properNames: { type: 'string', description: 'Comma-separated allowed proper nouns.' },
+        minWords: { type: 'integer', description: 'Minimum word count (default 180).' },
+        maxWords: { type: 'integer', description: 'Maximum word count (default 400).' },
       },
       required: ['text', 'targets', 'range'],
     },
@@ -180,6 +182,8 @@ export function apply(ctx) {
     async execute(args, exec) {
       const pyArgs = ['--text', args.text, '--targets', args.targets, '--range', args.range, '--json']
       if (args.properNames) pyArgs.push('--proper-names', args.properNames)
+      if (args.minWords) pyArgs.push('--min-words', String(args.minWords))
+      if (args.maxWords) pyArgs.push('--max-words', String(args.maxWords))
       const call = await run('story_audit.py', pyArgs, exec.signal)
       return JSON.parse(call.stdout)
     },
@@ -199,6 +203,8 @@ export function apply(ctx) {
         next_hook: { type: 'string', description: 'Ending scene/hook left for the next chapter.' },
         storiesDir: { type: 'string', description: 'Absolute stories directory (defaults beside vocab).' },
         properNames: { type: 'string', description: 'Comma-separated allowed proper nouns.' },
+        minWords: { type: 'integer', description: 'Minimum word count for the audit gate (default 180).' },
+        maxWords: { type: 'integer', description: 'Maximum word count for the audit gate (default 400).' },
         state: { type: 'string', description: 'Optional batch state file path (defaults beside vocab).' },
         storyline: { type: 'string', description: 'Optional storyline state file path (defaults beside vocab).' },
         premise: { type: 'string', description: 'If user provided a new script/worldview premise, pass here to initialize a new series (Chapter 1).' },
@@ -230,6 +236,8 @@ export function apply(ctx) {
     async execute(args, exec) {
       const auditArgs = ['--text', args.text, '--targets', args.targets, '--range', args.range, '--json']
       if (args.properNames) auditArgs.push('--proper-names', args.properNames)
+      if (args.minWords) auditArgs.push('--min-words', String(args.minWords))
+      if (args.maxWords) auditArgs.push('--max-words', String(args.maxWords))
       const auditCall = await run('story_audit.py', auditArgs, exec.signal)
       const audit = JSON.parse(auditCall.stdout)
       if (!audit.pass) {
@@ -543,6 +551,35 @@ export function apply(ctx) {
       if (args.arc_id) pyArgs.push('--arc-id', args.arc_id)
       const call = await run('context.py', pyArgs, exec.signal)
       return JSON.parse(call.stdout)
+    },
+  })
+
+  ctx.tools.register({
+    name: 'engstory_doctor',
+    description: 'Inspect the runtime environment (Python, FSRS dependency, vocabularies, optional state files) and return a plain-language setup checklist. Read-only: never writes anything.',
+    parameters: {
+      type: 'object',
+      properties: {
+        vocab: { type: 'string', description: 'Absolute FSRS vocabulary path (defaults to ENGSTORY_VOCAB or the built-in default).' },
+        range: { type: 'string', description: 'Absolute range vocabulary path (defaults to ENGSTORY_RANGE or the built-in default).' },
+      },
+    },
+    output: {
+      schema: { type: 'object', additionalProperties: true },
+      render: (_args, value) => jsonResult(value),
+    },
+    async execute(args, exec) {
+      const pyArgs = ['--json']
+      if (args.vocab) pyArgs.push('--vocab', args.vocab)
+      if (args.range) pyArgs.push('--range', args.range)
+      try {
+        const call = await run('doctor.py', pyArgs, exec.signal)
+        return JSON.parse(call.stdout)
+      } catch (err) {
+        // doctor 发现必修项缺失时退出码为 1，但 stdout 仍是合法 JSON——照常返回
+        if (err.stdout) return JSON.parse(err.stdout)
+        throw err
+      }
     },
   })
 }

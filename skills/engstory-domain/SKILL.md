@@ -5,7 +5,7 @@ description: >-
   按用户风格与章节戏剧结构连载纯英文故事，审计入账后等待用户反馈更新记忆；用户明确确认后才写入新词。
 platforms: [windows]
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 # 英语词汇故事 Agent 领域规则
@@ -32,6 +32,9 @@ metadata:
 - `engstory_build_context`：组装**写作上下文包**（style + plot + facts + immediate + targets），供模型动笔前读取。
 - `engstory_extract_style`：根据参考片段 + 读者感受生成**候选**风格分析骨架（不直接落盘）。
 - `engstory_confirm_style`：确认后把风格配置写入 `style-profile.json`（安全闸门：用户确认才写）。
+- `engstory_doctor`：环境体检（只读，不改任何文件）——检查 Python / FSRS 依赖 / 两个词库 / 可选状态文件的实况，输出带小白说明的设置清单。
+
+用户在写故事流程之外问「怎么开始 / 要准备什么 / 缺什么 / 怎么调整效果」时，加载 **engstory-guide** 技能回答（它配 doctor 的实况检查做引导，不要凭记忆背安装步骤）。
 
 所有工具都必须显式传入 FSRS 学习库绝对路径；`--range` 传入范围词汇库绝对路径。批次状态默认保存在学习库同目录的 `state.json`；连载状态保存在同目录的 `storyline.json`；风格/总纲/账本默认与词库同目录（`style-profile.json` / `plot-outline.json` / `chapter-ledger.jsonl`）。
 
@@ -59,7 +62,7 @@ metadata:
 
 ### 4. 纯英文连载写作
 
-模型按"章节戏剧结构"写 300–500 词纯英文故事：
+模型按"章节戏剧结构"写 300–400 词纯英文故事（审计硬窗口 180–400）：
 - 目标词必须全部出现且加粗（如 **abandon**）；
 - 普通词落在允许集合内；
 - 紧扣上一章后果与结尾动作，情节层层推进，篇末留下自然镜头动作；

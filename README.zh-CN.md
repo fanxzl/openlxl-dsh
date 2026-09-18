@@ -20,6 +20,7 @@
 - **按需上下文组装**：`engstory_build_context` 把「风格 + 卷/弧总纲 + 事实账本 + 当前状态 + 目标词」合并成一个有界的写作上下文包。
 - **章节戏剧结构**：每章须完成「立即接场 → 本章目标 → 阻力 → 选择 → 后果 → 具体钩子」，并带硬性负面约束（禁止重复天气开场 / 随机新增人物 / 空泛悬念 / 梦境解释等）。
 - **写作工艺常驻**：插件通过 DSH 提示词注册表登记独立系统提示段（`plugins/craft.md` → `engstory:craft`）——起草前六问自查、起草三纪律（不重复自己最近的开场 / 目标词按遗忘分排戏剧权重 / 结构是骨架不是句式）、起草后七维自评与去腔诊断，每个会话始终在场，不依赖技能按需加载。
+- **引导模式（engstory-guide 技能）**：问「怎么开始 / 缺什么」时，先用 `engstory_doctor` 确定性体检真实环境（只读），再把每个空位该放什么翻译成小白能懂的话；问「想调整效果」时，按内置参数地图定位要拧的旋钮（词数 / 字数 / 风格 / 剧情方向……），说明每个参数管什么、改完会看到什么变化。
 - **严格顺序闸门**：批次状态机（`TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE`）保证流程不可跳步：没有用户反馈不更新记忆，没有用户确认不写新词。
 - **词形归并**：`sought → seek`、`stood → stand`、`blue|蓝色` 多义词独立计数。
 - **指纹去重**：同一篇文本重复标记会被跳过，防止词频虚高。
@@ -33,9 +34,11 @@ openlxl/
 ├── CHANGELOG.md                  # 版本变更记录
 ├── LICENSE                       # MIT 许可
 └── plugins/
-│   ├── engstory-tools.mjs        # 9 个确定性工具（注册给 DSH Agent）
+│   ├── engstory-tools.mjs        # 10 个确定性工具（注册给 DSH Agent）
 │   └── craft.md                  # 写作工艺常驻系统提示段
 ├── skills/
+│   ├── engstory-guide/
+│   │   └── SKILL.md              # 引导模式：安装配置与效果调整（按需加载）
 │   └── engstory-domain/
 │       ├── SKILL.md              # 领域规则 + 固定输出模板
 │       ├── 检索/SKILL.md         # 子技能：选词（CLI 参考）
@@ -43,12 +46,13 @@ openlxl/
 │       ├── 更定频率/SKILL.md     # 子技能：标频（CLI 参考）
 │       ├── 反馈/SKILL.md         # 子技能：报词反馈（CLI 参考）
 │       ├── 写入词汇/SKILL.md     # 子技能：写新词（CLI 参考）
-│       └── scripts/              # 14 个 Python 脚本（纯标准库）
+│       └── scripts/              # 15 个 Python 脚本（纯标准库）
 │           ├── vocab_core.py     #   词库读写 / 词形归并 / FSRS 遗忘分
 │           ├── pick.py           #   选词（到期驱动四队列）
 │           ├── mark.py           #   标频（使用统计）
 │           ├── feedback.py       #   反馈（更新 FSRS）
 │           ├── add.py            #   写新词
+│           ├── doctor.py         #   环境体检（只读，引导模式的事实层）
 │           ├── vocab_distill.py  #   生成允许词汇包
 │           ├── story_audit.py    #   故事审计
 │           ├── range_lib.py      #   范围词库 / 功能词白名单
@@ -133,7 +137,7 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
   ① select_targets      从学习库选 7 个目标词           → TARGETS_SELECTED
   ② build_context       组装 风格+总纲+事实+当前状态+目标词
   ③ prepare_story_vocab 生成允许词汇包
-  ④ 写 300–500 词纯英文故事（目标词加粗，戏剧结构）
+  ④ 写 300–400 词纯英文故事（目标词加粗，戏剧结构）
   ⑤ audit_story         审计通过才提交，失败最多重写 2 次
   ⑥ commit_story        保存故事 + 标频 + 推进连载/账本 → WAITING_FEEDBACK
   ⑦ apply_feedback      用户报「会/不会」后才更新 FSRS   → WAITING_WORD_CONFIRMATION / IDLE
@@ -151,6 +155,7 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 | `engstory_write_learning_words` | add.py | 写入新词 | 用户明确确认后 |
 | `engstory_extract_style` | style.py | 提取候选风格（不落盘） | 有参考片段时 |
 | `engstory_confirm_style` | style.py | 写入确认后的风格配置 | 用户确认后 |
+| `engstory_doctor` | doctor.py | 只读体检环境，输出设置清单 | 用户问安装/配置/缺什么时 |
 
 ## 数据文件
 
