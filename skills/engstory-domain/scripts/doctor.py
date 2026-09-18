@@ -125,7 +125,7 @@ def collect(vocab_path: Path, vocab_src: str, range_path: Path, range_src: str) 
     ok, detail = _check_vocab_file(range_path)
     items.append({
         "id": "range", "ok": ok, "required": True,
-        "label": "范围词库（故事里允许使用的普通词清单，防止故事用词超纲）",
+        "label": "已会词白名单（故事里允许出现的英文词；词越多，故事里的英文越密）",
         "detail": detail + _src_note(range_src, "--range", "ENGSTORY_RANGE"),
         "fix": _sample_ref("range.sample.json",
                            '{"words": {"castle": {"gloss": "城堡"}, "walk": {"gloss": "走", "forms": ["walked", "walking"]}}}')

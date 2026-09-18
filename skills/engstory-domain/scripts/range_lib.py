@@ -4,7 +4,8 @@
 被 vocab_distill.py（准备故事词汇包）和 story_audit.py（故事审计）共同引用。
 职责：
   1. 读取范围词汇库 range_vocab.json（词元 → {gloss, forms?}）。
-  2. 内置基础功能词白名单，避免语法词被误判为超纲。
+     english 模式：限制故事普通词；mixed 模式：已会词白名单（允许出现的英文）。
+  2. 内置基础功能词白名单（english 模式豁免语法词；mixed 模式不豁免）。
   3. 给定目标词、范围词、功能词、专名，生成允许词元集合与允许词形集合。
   4. 判断一个表面词是否落在允许集合内（词形归并）。
 """
@@ -86,18 +87,22 @@ def load_range(path: Path) -> dict:
     return words
 
 
-def allowed_sets(range_words: dict, target_keys=(), proper_names=(), extra_forms=()) -> dict:
+def allowed_sets(range_words: dict, target_keys=(), proper_names=(), extra_forms=(),
+                 include_function_words=True) -> dict:
     """生成允许词元集合与允许词形集合。
 
     参数：
-      range_words   范围词库 {lemma: {gloss, forms?, ...}}
+      range_words   范围词库 {lemma: {gloss, forms?, ...}}（mixed 模式下 = 已会词白名单）
       target_keys   本轮目标词条 key（单义 base 或多义 base|释义）
       proper_names  允许的专有名词（大小写不敏感，统一小写存储）
       extra_forms   手工补充的额外允许词形
+      include_function_words  是否并入内置功能词白名单。english 模式 True（旧行为）；
+                              mixed 模式 False——英文只允许 目标词/范围词库/专名 三类，
+                              the/and/is 这类功能词出现即判超纲。
     返回：
       {lemmas: set, forms: set, function_words: set, proper_names: set}
     """
-    lemmas = set(FUNCTION_WORDS)
+    lemmas = set(FUNCTION_WORDS) if include_function_words else set()
     forms = set()
     for lemma, entry in range_words.items():
         lemma = lemma.lower().strip()
@@ -145,12 +150,16 @@ def lemma_of(tok: str, lemmas: set, forms: set) -> str | None:
     return None
 
 
-def is_allowed_token(tok: str, lemmas: set, forms: set) -> bool:
-    """判断表面词（已去标点、非数字）是否落在允许集合。"""
+def is_allowed_token(tok: str, lemmas: set, forms: set, single_letters: bool = True) -> bool:
+    """判断表面词（已去标点、非数字）是否落在允许集合。
+
+    single_letters=False（mixed 模式）时不豁免裸 a/i——它们是英语冠词/代词，
+    按「功能词不豁免」一并交给范围检查。
+    """
     if not tok:
         return False
     if re.fullmatch(r"\d+(?:[.,]\d+)*", tok):
         return True
-    if len(tok) == 1 and tok in "ai":
+    if single_letters and len(tok) == 1 and tok in "ai":
         return True
     return lemma_of(tok, lemmas, forms) is not None

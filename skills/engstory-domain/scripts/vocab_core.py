@@ -351,7 +351,19 @@ def load(vocab_path: Path) -> dict:
 
 
 def text_fingerprint(text: str) -> str:
-    """文本指纹：按归一化后的词序列算 sha1，忽略排版/标记差异。"""
+    """文本指纹：英文词序列 + 汉字序列归一化后算 sha1（忽略排版/标记差异）。
+
+    混合模式下只哈希英文 token 会让「英文相同、中文不同」的两篇文本撞指纹，
+    故连同汉字一起入哈希。
+    """
+    _, toks = tokenize(text)
+    cjk = re.findall(r"[一-鿿]", text)
+    payload = " ".join(toks) + "\x01" + "".join(cjk)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
+def text_fingerprint_english(text: str) -> str:
+    """旧版指纹（仅英文 token 序列）——mark.py 去重时做兼容双检，不写回。"""
     _, toks = tokenize(text)
     return hashlib.sha1(" ".join(toks).encode("utf-8")).hexdigest()
 

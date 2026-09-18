@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """vocab_distill.py — 生成本轮故事词汇包（纯只读）
 
-读取范围词汇库并生成模型写故事时可用的允许词汇范围：
+读取范围词汇库并生成模型写故事时可用的允许英文范围：
   - 目标词（必须使用，豁免范围约束）
-  - 允许普通词元（范围库 + 内置功能词 + 明确专名）
+  - 允许普通词元（范围库 + 明确专名；english 模式另含内置功能词，mixed 模式不含）
   - 允许词形（词元自动展开 + 范围库手工 forms）
+
+mixed（默认）模式下这份词包 = 故事里唯一允许出现的英文；其余全部用中文。
 
 用法：
   python vocab_distill.py --targets "coffin,abrupt" --range <range.json> --proper-names "Alice,Bob"
   python vocab_distill.py --targets "castle,blue|蓝色" --range <range.json> --json
+  python vocab_distill.py --targets "castle" --range <range.json> --mode english
 """
 
 import argparse
@@ -54,6 +57,8 @@ def main() -> int:
     ap.add_argument("--range", default=str(DEFAULT_RANGE), help="范围词汇库 json 路径")
     ap.add_argument("--vocab", help="FSRS 学习库 json 路径（用于解析精确 key）")
     ap.add_argument("--proper-names", help="逗号分隔的允许专有名词")
+    ap.add_argument("--mode", choices=["mixed", "english"], default="mixed",
+                    help="mixed=中英混合（默认，词包不含功能词）；english=纯英文（含功能词）")
     ap.add_argument("--state", help="批次状态文件路径（默认在学习库旁）")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
     args = ap.parse_args()
@@ -64,17 +69,21 @@ def main() -> int:
     proper_names = [p.strip() for p in (args.proper_names or "").split(",") if p.strip()]
     range_words = load_range(Path(args.range))
 
-    sets = allowed_sets(range_words, resolved, proper_names)
+    sets = allowed_sets(range_words, resolved, proper_names,
+                        include_function_words=(args.mode == "english"))
     targets = []
     for key in resolved:
         base, gloss = split_key(key)
         targets.append({"key": key, "word": base, "gloss": gloss})
 
     result = {
+        "mode": args.mode,
         "targets": targets,
         "allowed_lemmas": sorted(sets["lemmas"]),
         "allowed_forms": sorted(sets["forms"]),
-        "function_words_count": len(sets["function_words"]),
+        "function_words_count": (len(sets["function_words"]) if args.mode == "english" else 0),
+        "english_policy": ("只允许目标词/已会词/专名用英文，其余用中文"
+                           if args.mode == "mixed" else "纯英文，允许内置功能词"),
         "proper_names": sorted(sets["proper_names"]),
         "range_word_count": len(range_words),
         "target_count": len(targets),
@@ -85,9 +94,11 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False, indent=1))
         return 0
 
+    print(f"语言模式：{'中英混合（中文为正文，英文只嵌目标词/已会词/专名）' if args.mode == 'mixed' else '纯英文'}")
     print(f"目标词 {len(targets)} 个：{'、'.join(t['key'] for t in targets) or '无'}")
     print(f"范围词元 {len(range_words)} 个，允许普通词元 {len(sets['lemmas'])} 个，"
-          f"允许词形 {len(sets['forms'])} 个，功能词 {len(sets['function_words'])} 个")
+          f"允许词形 {len(sets['forms'])} 个"
+          + (f"，功能词 {len(sets['function_words'])} 个" if args.mode == "english" else ""))
     if proper_names:
         print(f"允许专名：{'、'.join(proper_names)}")
     if ambiguous:

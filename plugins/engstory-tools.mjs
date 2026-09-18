@@ -162,16 +162,19 @@ export function apply(ctx) {
 
   ctx.tools.register({
     name: 'engstory_audit_story',
-    description: 'Audit a story text: every target word present, ordinary words within the allowed range.',
+    description: 'Audit a story text. mixed mode (default): Chinese narration where English is allowed only for target words, range (known) words and proper nouns; every target occurrence must be bolded; length = Chinese chars + English words (default 300-800). english mode: legacy all-English rules (function words allowed, 180-400 words).',
     parameters: {
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Story text to audit.' },
         targets: { type: 'string', description: 'Comma-separated exact target keys.' },
-        range: { type: 'string', description: 'Absolute range vocabulary path.' },
+        range: { type: 'string', description: 'Absolute range vocabulary path (in mixed mode this is the known-words whitelist).' },
         properNames: { type: 'string', description: 'Comma-separated allowed proper nouns.' },
-        minWords: { type: 'integer', description: 'Minimum word count (default 180).' },
-        maxWords: { type: 'integer', description: 'Maximum word count (default 400).' },
+        mode: { type: 'string', enum: ['mixed', 'english'], description: 'Language mode: mixed (default, Chinese narration + embedded English) or english (legacy pure-English).' },
+        minLength: { type: 'integer', description: 'mixed mode: minimum mixed length, Chinese chars + English words (default 300).' },
+        maxLength: { type: 'integer', description: 'mixed mode: maximum mixed length (default 800).' },
+        minWords: { type: 'integer', description: 'english mode: minimum word count (default 180).' },
+        maxWords: { type: 'integer', description: 'english mode: maximum word count (default 400).' },
       },
       required: ['text', 'targets', 'range'],
     },
@@ -182,6 +185,9 @@ export function apply(ctx) {
     async execute(args, exec) {
       const pyArgs = ['--text', args.text, '--targets', args.targets, '--range', args.range, '--json']
       if (args.properNames) pyArgs.push('--proper-names', args.properNames)
+      if (args.mode) pyArgs.push('--mode', args.mode)
+      if (args.minLength) pyArgs.push('--min-length', String(args.minLength))
+      if (args.maxLength) pyArgs.push('--max-length', String(args.maxLength))
       if (args.minWords) pyArgs.push('--min-words', String(args.minWords))
       if (args.maxWords) pyArgs.push('--max-words', String(args.maxWords))
       const call = await run('story_audit.py', pyArgs, exec.signal)
@@ -191,7 +197,7 @@ export function apply(ctx) {
 
   ctx.tools.register({
     name: 'engstory_commit_story',
-    description: 'Audit then commit a story: save only if the audit passes, record usage, update storyline continuity, and open the feedback phase. Before committing, complete the craft self-review and one revision pass required by the always-on writing-craft section.',
+    description: 'Audit then commit a story: save only if the audit passes, record usage, update storyline continuity, and open the feedback phase. Language mode follows the audit (mixed by default: Chinese narration + embedded bolded English). Before committing, complete the craft self-review and one revision pass required by the always-on writing-craft section.',
     parameters: {
       type: 'object',
       properties: {
@@ -203,8 +209,11 @@ export function apply(ctx) {
         next_hook: { type: 'string', description: 'Ending scene/hook left for the next chapter.' },
         storiesDir: { type: 'string', description: 'Absolute stories directory (defaults beside vocab).' },
         properNames: { type: 'string', description: 'Comma-separated allowed proper nouns.' },
-        minWords: { type: 'integer', description: 'Minimum word count for the audit gate (default 180).' },
-        maxWords: { type: 'integer', description: 'Maximum word count for the audit gate (default 400).' },
+        mode: { type: 'string', enum: ['mixed', 'english'], description: 'Language mode: mixed (default, Chinese narration + embedded English) or english (legacy pure-English).' },
+        minLength: { type: 'integer', description: 'mixed mode: minimum mixed length for the audit gate, Chinese chars + English words (default 300).' },
+        maxLength: { type: 'integer', description: 'mixed mode: maximum mixed length (default 800).' },
+        minWords: { type: 'integer', description: 'english mode: minimum word count for the audit gate (default 180).' },
+        maxWords: { type: 'integer', description: 'english mode: maximum word count (default 400).' },
         state: { type: 'string', description: 'Optional batch state file path (defaults beside vocab).' },
         storyline: { type: 'string', description: 'Optional storyline state file path (defaults beside vocab).' },
         premise: { type: 'string', description: 'If user provided a new script/worldview premise, pass here to initialize a new series (Chapter 1).' },
@@ -236,6 +245,9 @@ export function apply(ctx) {
     async execute(args, exec) {
       const auditArgs = ['--text', args.text, '--targets', args.targets, '--range', args.range, '--json']
       if (args.properNames) auditArgs.push('--proper-names', args.properNames)
+      if (args.mode) auditArgs.push('--mode', args.mode)
+      if (args.minLength) auditArgs.push('--min-length', String(args.minLength))
+      if (args.maxLength) auditArgs.push('--max-length', String(args.maxLength))
       if (args.minWords) auditArgs.push('--min-words', String(args.minWords))
       if (args.maxWords) auditArgs.push('--max-words', String(args.maxWords))
       const auditCall = await run('story_audit.py', auditArgs, exec.signal)
@@ -258,7 +270,8 @@ export function apply(ctx) {
       let hookText = (args.next_hook || '').trim()
       if (!hookText) {
         // 从正文末尾按句号/标点提取最后 1-2 句话作为镜头钩子兜底
-        const sentences = args.text.replace(/\r/g, '').split(/(?<=[.!?])\s+/).filter(Boolean)
+        // （含中文标点：混合模式正文按「。」「！」「？」断句）
+        const sentences = args.text.replace(/\r/g, '').split(/(?<=[.!?。！？])\s*/).filter(Boolean)
         hookText = sentences.slice(-2).join(' ').slice(-200).trim()
       }
       if (!summaryText) {

@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocab_core import (  # noqa: E402
     DEFAULT_VOCAB, count_words, load, now_iso, save, split_key, text_fingerprint,
+    text_fingerprint_english,
 )
 
 
@@ -105,11 +106,14 @@ def main() -> int:
             + "、".join(ambiguous_refs)
         )
 
-    # 同一段文本重复标记会让词频虚高（LLM 重试、手动补跑都可能触发）→ 指纹去重
+    # 同一段文本重复标记会让词频虚高（LLM 重试、手动补跑都可能触发）→ 指纹去重。
+    # 双检：新指纹（英文词 + 汉字）与旧版指纹（纯英文 token）任一命中都算已标过——
+    # v0.2.0 换过指纹算法，历史标记记录仍然拦得住旧文本重标。写回只写新指纹。
     fp = text_fingerprint(text)
+    legacy_fp = text_fingerprint_english(text)
     seen = data.setdefault("meta", {}).setdefault("marked", {})
-    if fp in seen and not args.force:
-        prev = seen[fp]
+    prev = seen.get(fp) or seen.get(legacy_fp)
+    if prev and not args.force:
         msg = f"这段文本已在 {prev} 标记过，本次跳过（--force 可强制再记一次）。"
         if args.json:
             print(json.dumps({"skipped": True, "marked_at": prev, "hits": {},

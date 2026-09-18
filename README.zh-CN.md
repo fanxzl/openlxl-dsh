@@ -2,9 +2,11 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-基于 FSRS（间隔重复）算法的英语词汇学习模式：从学习词库选目标词 → 用受限词汇写英文故事 → 审计 → 记使用频率 → 等用户报「会/不会」→ 更新记忆状态。用户明确确认后才写入新词。
+基于 FSRS（间隔重复）算法的英语词汇学习模式：从学习词库选目标词 → 写**中英混合**故事（中文叙事，英文只嵌目标词与已会词）→ 审计 → 记使用频率 → 等用户报「会/不会」→ 更新记忆状态。用户明确确认后才写入新词。
 
 > **记忆调度参照自 Anki**：本项目的间隔重复调度采用 [Anki](https://apps.ankiweb.net/) 同款的开源 FSRS 算法（经由 [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs) 实现），选词优先级、遗忘分与复习间隔的计算与 Anki 生态一致。
+
+> **混合是坡道，纯英文是坡顶**：故事里的英文只允许是「该练的目标词 + 已会词名单上的词」，其余全部中文。已会词名单（范围词库）越长，英文比例自然爬升——不需要任何开关，词汇量就是油门。审计每章回报英文占比，能看着它一路涨到纯英文（`--mode english` 即坡顶模式）。
 
 本仓库是 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/dsh) 的 **agent preset**，也可脱离 DSH 单独作为 Python CLI 使用。
 
@@ -14,12 +16,14 @@
 
 - **FSRS 记忆调度**：内置 [py-fsrs 6.3.1](https://github.com/open-spaced-repetition/py-fsrs)（Anki 同款间隔重复算法），每个词独立维护 `难度 / 稳定性 / 下次到期`。
 - **遗忘分排序**：选词时按当前遗忘分（`(1 - 可提取性) × 100`）实时排序——快忘的词自动排到最前，新词默认 30 分，长期遗忘的「不会」词能插队回炉。
-- **受限词汇写作**：故事中的普通词必须落在「范围词汇库 + 内置功能词 + 明确专名」内，目标词豁免并强制加粗。
+- **中英混合写作（默认）**：叙事语言是中文，英文只允许三类——目标词 / 已会词白名单（范围词库）/ 明确专名，功能词（the/and 等）也不例外；目标词每次出现强制加粗（审计硬检查），叙事长度按「汉字 + 英文词」的混合字数计（默认 300–800）。
+- **严格审计**：目标词全中 / 每次加粗 / 英文全部落在允许三类内 / 混合字数窗口；审计通过才提交。英文占比（`english_ratio`）作为观测值逐章回报，不设闸门。
+- **纯英文模式（坡顶）**：`--mode english` 回到全英文规则（内置功能词豁免、180–400 词窗）——等已会词名单足够长时切换。
 - **分层长篇记忆**：章节事实账本（`chapter-ledger.jsonl`）逐章记录事实 / 人物与关系变化 / 线索变化 / 后果；卷与故事弧总纲（`plot-outline.json`）承载长期方向；内置确定性冲突检测，能标记「哥哥确实来过警局」vs「哥哥从未进过警局」这类矛盾。
 - **可提炼、可确认的风格**：风格配置（`style-profile.json`）含维度 / must-do / avoid / 置信度；候选风格从参考片段 + 读者感受提取，**用户确认后才落盘**（`engstory_extract_style` → `engstory_confirm_style`），绝不自动覆盖。
 - **按需上下文组装**：`engstory_build_context` 把「风格 + 卷/弧总纲 + 事实账本 + 当前状态 + 目标词」合并成一个有界的写作上下文包。
 - **章节戏剧结构**：每章须完成「立即接场 → 本章目标 → 阻力 → 选择 → 后果 → 具体钩子」，并带硬性负面约束（禁止重复天气开场 / 随机新增人物 / 空泛悬念 / 梦境解释等）。
-- **写作工艺常驻**：插件通过 DSH 提示词注册表登记独立系统提示段（`plugins/craft.md` → `engstory:craft`）——起草前六问自查、起草三纪律（不重复自己最近的开场 / 目标词按遗忘分排戏剧权重 / 结构是骨架不是句式）、起草后七维自评与去腔诊断，每个会话始终在场，不依赖技能按需加载。
+- **写作工艺常驻**：插件通过 DSH 提示词注册表登记独立系统提示段（`plugins/craft.md` → `engstory:craft`）——起草前六问自查、起草三纪律（不重复自己最近的开场 / 目标词按遗忘分排戏剧权重 / 结构是骨架不是句式）、嵌词四纪律（语境可猜 / 两次两语境 / 密度克制 / 不注译）、起草后七维自评与去腔诊断，每个会话始终在场，不依赖技能按需加载。
 - **引导模式（engstory-guide 技能）**：问「怎么开始 / 缺什么」时，先用 `engstory_doctor` 确定性体检真实环境（只读），再把每个空位该放什么翻译成小白能懂的话；问「想调整效果」时，按内置参数地图定位要拧的旋钮（词数 / 字数 / 风格 / 剧情方向……），说明每个参数管什么、改完会看到什么变化。
 - **严格顺序闸门**：批次状态机（`TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE`）保证流程不可跳步：没有用户反馈不更新记忆，没有用户确认不写新词。
 - **词形归并**：`sought → seek`、`stood → stand`、`blue|蓝色` 多义词独立计数。
@@ -90,14 +94,14 @@ openlxl/
    cp -r openlxl ~/.dsh/.agent-presets/openlxl
    ```
 
-2. 启动 DSH，新建会话时选择 `openlxl` preset（agent 自动获得 9 个工具 + 领域技能）。
+2. 启动 DSH，新建会话时选择 `openlxl` preset（agent 自动获得 10 个工具 + 领域技能）。
 
 3. 准备两个词库（路径由你自己指定，工具参数或环境变量传入）：
 
    | 词库 | 默认路径（环境变量可改） | 作用 |
    |---|---|---|
    | FSRS 学习库 | `/workspace/vocab.json`（`ENGSTORY_VOCAB`） | 要学的词：目标词选择 / 使用统计 / 记忆反馈 |
-   | 范围词汇库 | `./range_vocab.json`（`ENGSTORY_RANGE`） | 限定故事里普通词的词汇范围 |
+   | 范围词汇库（已会词白名单） | `./range_vocab.json`（`ENGSTORY_RANGE`） | 故事里允许出现的英文词；名单越长，故事越英文化 |
 
 4. 对 Agent 说「写故事」，它就会走完整闭环：选词 → 写故事 → 审计 → 标频 → 等你报「会/不会」→ 更新记忆。
 
@@ -118,7 +122,7 @@ python scripts/pick.py --vocab $V
 # 3. 生成允许词汇包（准备写故事）
 python scripts/vocab_distill.py --targets "abandon,coffin" --range $R --vocab $V
 
-# 4. 审计故事
+# 4. 审计故事（默认中英混合；加 --mode english 切纯英文规则）
 python scripts/story_audit.py --text "<故事正文>" --targets "abandon,coffin" --range $R
 
 # 5. 标频（记使用次数）
@@ -136,8 +140,8 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 写故事闭环（严格按顺序）：
   ① select_targets      从学习库选 7 个目标词           → TARGETS_SELECTED
   ② build_context       组装 风格+总纲+事实+当前状态+目标词
-  ③ prepare_story_vocab 生成允许词汇包
-  ④ 写 300–400 词纯英文故事（目标词加粗，戏剧结构）
+  ③ prepare_story_vocab 生成允许英文词包
+  ④ 写 300–800 混合字数故事（中文叙事；英文只嵌目标词/已会词/专名，目标词加粗，戏剧结构）
   ⑤ audit_story         审计通过才提交，失败最多重写 2 次
   ⑥ commit_story        保存故事 + 标频 + 推进连载/账本 → WAITING_FEEDBACK
   ⑦ apply_feedback      用户报「会/不会」后才更新 FSRS   → WAITING_WORD_CONFIRMATION / IDLE
@@ -190,10 +194,11 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 | `不会频次` | 重复导入次数 | add.py |
 | `state`/`step`/`stability`/`difficulty`/`due`/`last_review`/`card_id` | FSRS 卡片参数 | feedback.py（py-fsrs 计算） |
 | `forget_score` | 遗忘分缓存（选词/反馈时实时刷新） | pick.py / feedback.py |
+| `meta.marked` | 已标记文本的指纹（英文词 + 汉字共同入哈希），防重复计数 | mark.py |
 
 多义词按 `英文|释义` 拆成独立词条（如 `blue|蓝色`、`blue|忧伤`），各自独立计数、独立记忆。
 
-### 范围词汇库（JSON）
+### 范围词汇库（JSON，即已会词白名单）
 
 ```json
 {
@@ -203,6 +208,8 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
   }
 }
 ```
+
+混合模式下这是**故事里允许出现的英文词**（目标词之外）：榜上有名的词可以英文嵌进中文叙事，名单越长英文密度越高。纯英文模式（`--mode english`）下它退回旧角色——限制普通词范围。
 
 ### 批次状态文件
 
@@ -232,7 +239,7 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 | 变量 | 默认 | 作用 |
 |---|---|---|
 | `ENGSTORY_VOCAB` | `/workspace/vocab.json` | FSRS 学习词库路径 |
-| `ENGSTORY_RANGE` | `./range_vocab.json` | 范围词汇库路径 |
+| `ENGSTORY_RANGE` | `./range_vocab.json` | 已会词白名单路径（故事里允许出现的英文） |
 | `ENGSTORY_STATE` | 学习库同目录 `state.json` | 批次状态文件 |
 | `ENGSTORY_FSRS` | 仓库 `vendor/` | fsrs 依赖目录 |
 | `ENGSTORY_STORYLINE` | 学习库同目录 `storyline.json` | 连载状态 |

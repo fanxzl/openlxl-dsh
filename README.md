@@ -2,9 +2,11 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
-An English vocabulary learning mode based on FSRS spaced repetition: pick target words from your learning vocabulary → write an English story with range-restricted words → audit → record usage → wait for your "know / don't know" feedback → update memory state. New words are only written into the vocabulary after you explicitly confirm them.
+An English vocabulary learning mode based on FSRS spaced repetition: pick target words from your learning vocabulary → write a **mixed Chinese–English story** (Chinese narration; English appears only as the target words and words from your known-words list) → audit → record usage → wait for your "know / don't know" feedback → update memory state. New words are only written into the vocabulary after you explicitly confirm them.
 
 > **Memory scheduling references Anki**: the spaced-repetition scheduling in this project uses the same open-source [FSRS](https://github.com/open-spaced-repetition/fsrs4anki) algorithm that [Anki](https://apps.ankiweb.net/) uses, implemented via [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs). Selection priority, forget scores and review intervals are computed consistently with the Anki ecosystem.
+
+> **Mixed is the ramp, pure English is the summit**: English in a story is limited to "target words being tested + words on your known-words list"; everything else is Chinese. The longer that list grows, the more English appears — no switch to flip, vocabulary size *is* the throttle. Each chapter reports its English ratio so you can watch it climb toward pure English (`--mode english` is the summit mode).
 
 This repository is an **agent preset** for [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/dsh), and can also be used standalone as a Python CLI.
 
@@ -14,13 +16,14 @@ This repository is an **agent preset** for [DeepSeek Harness (DSH)](https://gith
 
 - **FSRS memory scheduling**: built-in [py-fsrs 6.3.1](https://github.com/open-spaced-repetition/py-fsrs) (the spaced-repetition algorithm used by Anki); every word keeps its own `difficulty / stability / due date`.
 - **Forget-score ranking**: at pick time the current forget score (`(1 - retrievability) × 100`) is computed live — words about to be forgotten float to the top, new cards default to 30, and long-forgotten "don't know" words automatically cut back in line.
-- **Range-restricted story writing**: ordinary words in a story must fall within the range vocabulary + built-in function words + explicitly allowed proper nouns; target words are exempt and must be bolded.
-- **Strict audit**: all targets present / ordinary words in range / 180–400 words / English only; a story is committed only after the audit passes.
+- **Mixed Chinese–English writing (default)**: narration is Chinese; English is allowed for exactly three kinds of words — target words / known words from the range vocabulary / explicitly allowed proper nouns. Even function words (the, and, is…) are rejected. Every target occurrence must be bolded (hard audit check). Length counts Chinese characters + English words (default 300–800).
+- **Strict audit**: all targets present / every occurrence bolded / English restricted to the three allowed kinds / mixed-length window; a story is committed only after the audit passes. The English ratio (`english_ratio`) is reported per chapter as an observation, not gated.
+- **Pure-English mode (the summit)**: `--mode english` restores the legacy all-English rules (built-in function-word allowance, 180–400 words) — switch when your known-words list is long enough.
 - **Layered long-form memory**: a chapter fact ledger (`chapter-ledger.jsonl`) records per-chapter facts, character/relationship changes, thread changes and consequences; a volume/story-arc outline (`plot-outline.json`) keeps the long-term direction, with a deterministic conflict detector that flags "did come" vs "never came" contradictions.
 - **Extractable, confirmable style**: a style profile (`style-profile.json`) holds dimensions / must-do / avoid / confidence; candidate styles are extracted from reference fragments + reader impressions and only persisted after you confirm (`engstory_extract_style` → `engstory_confirm_style`) — never auto-overwritten.
 - **On-demand context assembly**: `engstory_build_context` merges style + plot outline + facts + current state + target words into a single bounded writing-context package.
 - **Dramatic chapter structure**: each chapter is required to complete "scene entry → chapter goal → obstacle → choice → consequence → concrete hook", with hard negative constraints (no repeated weather openings, no random new characters, no empty suspense, no dream explanations).
-- **Always-on writing craft**: the plugin registers a dedicated system-prompt section (`plugins/craft.md` → `engstory:craft`) through the DSH prompt registry, so the writing discipline — six pre-draft checks, three drafting rules (never repeat your own recent openings / target words get dramatic weight by forget score / structure is a skeleton, not a sentence pattern), and a seven-dimension self-review with de-cliché diagnosis — stays present in every session instead of depending on on-demand skill loading.
+- **Always-on writing craft**: the plugin registers a dedicated system-prompt section (`plugins/craft.md` → `engstory:craft`) through the DSH prompt registry, so the writing discipline — six pre-draft checks, three drafting rules (never repeat your own recent openings / target words get dramatic weight by forget score / structure is a skeleton, not a sentence pattern), four embedding rules (inferable context / twice in two contexts / restrained density / no glossing), and a seven-dimension self-review with de-cliché diagnosis — stays present in every session instead of depending on on-demand skill loading.
 - **Guide mode (`engstory-guide` skill)**: when the user asks "how do I start / what am I missing", it first runs `engstory_doctor` for a deterministic, read-only check of the real environment, then explains in plain language what goes into each empty slot; when the user wants to tune the effect, a built-in parameter map points to the exact knob (target count / story length / style / plot direction…) and explains what each parameter does and what changes after the tweak.
 - **Strict batch state machine**: `TARGETS_SELECTED → WAITING_FEEDBACK → WAITING_WORD_CONFIRMATION → IDLE` — no memory update without user feedback, no new words without user confirmation.
 - **Morphological lemmatization**: `sought → seek`, `stood → stand`; polysemous words are tracked as independent entries (`blue|蓝色`, `blue|忧伤`).
@@ -92,14 +95,14 @@ Prerequisites: [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/dsh) and 
    cp -r openlxl ~/.dsh/.agent-presets/openlxl
    ```
 
-2. Start DSH and create a new session with the `openlxl` preset (the agent automatically gets the 9 tools + domain skills).
+2. Start DSH and create a new session with the `openlxl` preset (the agent automatically gets the 10 tools + domain skills).
 
 3. Prepare two vocabularies (paths are up to you; pass them to the tools or via environment variables):
 
    | Vocabulary | Default path (env var override) | Purpose |
    |---|---|---|
    | FSRS learning vocabulary | `/workspace/vocab.json` (`ENGSTORY_VOCAB`) | words to learn: target selection / usage stats / memory feedback |
-   | Range vocabulary | `./range_vocab.json` (`ENGSTORY_RANGE`) | restricts the ordinary words allowed in stories |
+   | Range vocabulary (known-words whitelist) | `./range_vocab.json` (`ENGSTORY_RANGE`) | English words allowed to appear in stories; the longer it grows, the more English your stories carry |
 
 4. Tell the agent "写故事" (write a story) and it runs the full loop: pick → write → audit → mark → wait for your "know/don't know" → update memory.
 
@@ -120,7 +123,7 @@ python scripts/pick.py --vocab "$V"
 # 3. Build the allowed vocabulary package (before writing a story)
 python scripts/vocab_distill.py --targets "abandon,coffin" --range "$R" --vocab "$V"
 
-# 4. Audit a story
+# 4. Audit a story (mixed mode by default; add --mode english for the legacy rules)
 python scripts/story_audit.py --text "<story text>" --targets "abandon,coffin" --range "$R"
 
 # 5. Mark usage
@@ -138,8 +141,8 @@ All scripts support `--json` output for programmatic use.
 Story loop (strict order):
   ① select_targets      pick 7 target words from the learning vocabulary   → TARGETS_SELECTED
   ② build_context       assemble style + plot + facts + current state + targets
-  ③ prepare_story_vocab build the allowed vocabulary package
-  ④ write a 300–400 word English-only story (target words bolded, dramatic structure)
+  ③ prepare_story_vocab build the allowed English word package
+  ④ write a 300–800 mixed-length chapter (Chinese narration; English only for targets / known words / proper nouns, targets bolded, dramatic structure)
   ⑤ audit_story         commit only if the audit passes; rewrite at most twice
   ⑥ commit_story        save story + mark usage + advance storyline/ledger → WAITING_FEEDBACK
   ⑦ apply_feedback      update FSRS only after the user reports            → WAITING_WORD_CONFIRMATION / IDLE
@@ -192,10 +195,11 @@ Field reference:
 | `不会频次` | repeated-import count | add.py |
 | `state`/`step`/`stability`/`difficulty`/`due`/`last_review`/`card_id` | FSRS card parameters | feedback.py (computed by py-fsrs) |
 | `forget_score` | cached forget score (refreshed at pick/feedback time) | pick.py / feedback.py |
+| `meta.marked` | fingerprints of already-marked texts (English words + Chinese characters), prevents double counting | mark.py |
 
 Polysemous words are split into independent entries by `word|gloss` (e.g. `blue|蓝色`, `blue|忧伤`), each with its own counters and memory state.
 
-### Range vocabulary (JSON)
+### Range vocabulary (JSON — the known-words whitelist)
 
 ```json
 {
@@ -205,6 +209,8 @@ Polysemous words are split into independent entries by `word|gloss` (e.g. `blue|
   }
 }
 ```
+
+In mixed mode this is **the set of English words allowed to appear in stories** (besides targets): listed words may be embedded into the Chinese narration, and the longer the list, the denser the English. In pure-English mode (`--mode english`) it reverts to its legacy role — restricting ordinary words.
 
 ### Batch state file
 
@@ -234,7 +240,7 @@ Defaults to `state.json` beside the learning vocabulary (`ENGSTORY_STATE` overri
 | Variable | Default | Purpose |
 |---|---|---|
 | `ENGSTORY_VOCAB` | `/workspace/vocab.json` | FSRS learning vocabulary path |
-| `ENGSTORY_RANGE` | `./range_vocab.json` | range vocabulary path |
+| `ENGSTORY_RANGE` | `./range_vocab.json` | known-words whitelist path (English allowed in stories) |
 | `ENGSTORY_STATE` | `state.json` beside the vocabulary | batch state file |
 | `ENGSTORY_FSRS` | bundled `vendor/` | fsrs dependency directory |
 | `ENGSTORY_STORYLINE` | `storyline.json` beside the vocabulary | continuous storyline state |
