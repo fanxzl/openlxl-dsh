@@ -3,8 +3,8 @@
     "marked": {}
   },
   "words": {
-    "crypt": {
-      "gloss": "地下室（尤指教堂下的）",
+    "harbor": {
+      "gloss": "港口",
       "picks": 3,
       "last_pick": "2026-07-10T09:00:00",
       "uses": 1,
@@ -21,8 +21,8 @@
       "last_review": "2026-07-15T09:00:00+00:00",
       "forget_score": 62.5
     },
-    "coffin": {
-      "gloss": "棺材",
+    "harvest": {
+      "gloss": "收获",
       "picks": 0,
       "last_pick": null,
       "uses": 0,
@@ -39,8 +39,8 @@
       "last_review": null,
       "forget_score": 30.0
     },
-    "tale|传说": {
-      "gloss": "传说",
+    "bank|河岸": {
+      "gloss": "河岸",
       "picks": 2,
       "last_pick": "2026-08-15T09:00:00",
       "uses": 1,

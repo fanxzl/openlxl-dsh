@@ -46,7 +46,7 @@ python "scripts/mark.py" --file "<路径>" --vocab "<词库路径>"
 
 ```
 命中 8/10：abandon×1、abrupt×2、absorb×1、...
-未用到 2 个：access、accident
+未用到 2 个：harvest、accident
 另外用到词库里的：seek×1、give up×1
 ```
 

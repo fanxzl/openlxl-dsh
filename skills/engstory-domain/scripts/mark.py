@@ -129,7 +129,7 @@ def main() -> int:
     hits, missed = {}, []
     if asked:
         # 每个英文表面词的出现次数，是最多可确认的独立释义数量。
-        # 例如本轮有 sharp|尖锐的、sharp|急转的，则 sharp 至少出现 2 次才两条都命中。
+        # 例如本轮有 bank|河岸、bank|银行，则 bank 至少出现 2 次才两条都命中。
         groups = {}
         for key in asked:
             base, _ = split_key(key)

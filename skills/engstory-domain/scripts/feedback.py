@@ -2,8 +2,8 @@
 """feedback.py — 词汇掌握反馈：你报词单评级（会/不会），更新词的 FSRS 记忆状态。
 
 用法（任选其一）：
-  python feedback.py --words "abandon 会, coffin 不会"
-  python feedback.py --words "abandon 不会, dive 会" --json
+  python feedback.py --words "abandon 会, harbor 不会"
+  python feedback.py --words "abandon 不会, harvest 会" --json
 
 评级（两档最常用，四档都支持）：
   会 / 会了 / 记住了 / 认识        → Good（记得牢，下次间隔拉长）
@@ -50,7 +50,7 @@ RATING_MAP = {
 
 
 def parse_feedback(text: str) -> list:
-    """解析 "abandon 会, coffin 不会" → [(词, Rating), ...]"""
+    """解析 "abandon 会, harbor 不会" → [(词, Rating), ...]"""
     out = []
     for part in text.split(","):
         part = part.strip()
@@ -98,14 +98,14 @@ def resolve_feedback_key(token: str, words: dict):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="反馈：按用户报的会/不会，更新词条记忆状态")
-    ap.add_argument("--words", required=True, help="词单+评级：abandon 会, coffin 不会")
+    ap.add_argument("--words", required=True, help="词单+评级：abandon 会, harbor 不会")
     ap.add_argument("--vocab", default=str(DEFAULT_VOCAB), help="词库 json 路径")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
     args = ap.parse_args()
 
     items = parse_feedback(args.words)
     if not items:
-        sys.exit('ERROR: 没解析出 词+评级。格式：--words "abandon 会, coffin 不会"')
+        sys.exit('ERROR: 没解析出 词+评级。格式：--words "abandon 会, harbor 不会"')
 
     vp = Path(args.vocab)
     data = load(vp)

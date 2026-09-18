@@ -114,22 +114,22 @@ cd skills/engstory-domain
 $V = "<你的学习词库路径>"; $R = "<你的范围词库路径>"
 
 # 1. 写新词（用户确认后才做）
-python scripts/add.py --words "abandon 放弃, coffin 棺材" --vocab $V
+python scripts/add.py --words "abandon 放弃, harbor 港口" --vocab $V
 
 # 2. 选 7 个目标词
 python scripts/pick.py --vocab $V
 
 # 3. 生成允许词汇包（准备写故事）
-python scripts/vocab_distill.py --targets "abandon,coffin" --range $R --vocab $V
+python scripts/vocab_distill.py --targets "abandon,harbor" --range $R --vocab $V
 
 # 4. 审计故事（默认中英混合；加 --mode english 切纯英文规则）
-python scripts/story_audit.py --text "<故事正文>" --targets "abandon,coffin" --range $R
+python scripts/story_audit.py --text "<故事正文>" --targets "abandon,harbor" --range $R
 
 # 5. 标频（记使用次数）
-python scripts/mark.py --text "<故事正文>" --words "abandon,coffin" --vocab $V
+python scripts/mark.py --text "<故事正文>" --words "abandon,harbor" --vocab $V
 
 # 6. 反馈（用户报完会/不会后）
-python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
+python scripts/feedback.py --words "abandon 会, harbor 不会" --vocab $V
 ```
 
 所有脚本支持 `--json` 输出，便于程序化调用。
@@ -169,8 +169,8 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab $V
 {
   "meta": { "marked": { "<文本指纹 sha1>": "2026-08-15T20:00:00+08:00" } },
   "words": {
-    "crypt": {
-      "gloss": "地下室",
+    "harbor": {
+      "gloss": "港口",
       "picks": 3, "last_pick": "2026-07-10T09:00:00+08:00",
       "uses": 1, "texts": 1, "last_use": "2026-07-15T20:00:00+08:00",
       "forms": [], "不会频次": 2,

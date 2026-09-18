@@ -397,7 +397,7 @@ def count_words(text: str, words: dict) -> Counter:
     """统计每个英文表面词在 text 中出现的次数（含变形与短语）。
 
     返回值按英文 base word 计数，而不是按多义词内部 key 计数。
-    例如 sharp、sharp|尖锐的、sharp|急转的统一先得到 sharp 的出现次数；
+    例如 bank、bank|河岸、bank|银行的统一先得到 bank 的出现次数；
     具体应记入哪个独立释义，由 mark.py 根据本轮传入的精确 key 分配。
     """
     low, toks = tokenize(text)

@@ -9,7 +9,7 @@
   - 目标任务           本轮目标词（必须自然出现）
 
 用法：
-  python context.py --vocab <词库> [--targets "crypt,coffin"] [--json]
+  python context.py --vocab <词库> [--targets "harbor,harvest"] [--json]
 """
 
 import argparse

@@ -2,6 +2,12 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.1] - 2026-09-18
+
+### 变更
+
+- **示例数据去个人化**：`examples/vocab.sample.json`、两份 README、五个技能文档与各脚本 docstring 中的示例词，统一替换为中性通用词（`harbor` / `harvest` / `bank|河岸` / `meadow` / `wander` / `blue|…`），不再与真实个人词表重合。功能无任何变化。
+
 ## [0.2.0] - 2026-09-18
 
 **BREAKING：默认写作模式由「纯英文」反转为「中英混合」。** 中文成为叙事语言，英文只嵌「待检测的目标词 + 已会词（范围词库）+ 专名白名单」——纯英文读不下去时的务实折中，也是一条坡道：已会词名单越长，英文比例自然爬升，坡顶即纯英文。

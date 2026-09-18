@@ -14,7 +14,7 @@
   - 词形归并（walked → walk）后再判定，避免正常变形被误判超纲
 
 用法：
-  python story_audit.py --file story.md --targets "coffin,abrupt" --range <range.json>
+  python story_audit.py --file story.md --targets "harbor,abrupt" --range <range.json>
   python story_audit.py --text "..." --targets "castle,blue|蓝色" --range <range.json> --json
   python story_audit.py --text "..." --targets "castle" --range <range.json> --mode english
 """

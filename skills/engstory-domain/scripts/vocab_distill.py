@@ -9,7 +9,7 @@
 mixed（默认）模式下这份词包 = 故事里唯一允许出现的英文；其余全部用中文。
 
 用法：
-  python vocab_distill.py --targets "coffin,abrupt" --range <range.json> --proper-names "Alice,Bob"
+  python vocab_distill.py --targets "harbor,abrupt" --range <range.json> --proper-names "Alice,Bob"
   python vocab_distill.py --targets "castle,blue|蓝色" --range <range.json> --json
   python vocab_distill.py --targets "castle" --range <range.json> --mode english
 """

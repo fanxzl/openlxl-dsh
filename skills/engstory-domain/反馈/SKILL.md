@@ -6,7 +6,7 @@ description: |
   只有在用户给出了具体反馈（报出哪些词会、哪些词不会）之后，才据此更新这些词的记忆状态（难度/稳定性/下次到期）。
   没有用户反馈之前，绝不自动执行、绝不自己猜测评级。
   只做反馈这一件事——不检索、不更定频率。
-  触发词：反馈、报词、这轮词我……、abandon 会 coffin 不会、把词标一下。
+  触发词：反馈、报词、这轮词我……、abandon 会 harbor 不会、把词标一下。
 platforms: [windows]
 metadata:
   version: "1.1.0"
@@ -19,7 +19,7 @@ metadata:
 ## 触发前提（硬性要求）
 
 1. 上一步（更定频率）完成后，把本轮目标词单连同释义列给用户。
-2. **停下来等用户回复**，例如用户说"ridiculous 不会、rough 会、tale 会"。
+2. **停下来等用户回复**，例如用户说"harvest 不会、harbor 会、wander 会"。
 3. 只有收到这样的反馈后，才执行下面的命令；用户没回、只回了一部分，都照实际收到的执行。
 
 ## 唯一的动作
@@ -28,7 +28,7 @@ metadata:
 
 ```bash
 # 在仓库 skills/engstory-domain/ 目录下执行
-python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab "<词库路径>"
+python scripts/feedback.py --words "abandon 会, harbor 不会" --vocab "<词库路径>"
 ```
 
 - 词和评级用空格分隔，词条之间用逗号分隔。
@@ -44,7 +44,7 @@ python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab "<词库
 ```
 已更新 2 个词条的记忆状态：
   abandon  [Good]  下次 5 天后  难度 2.118
-  coffin   [Again] 下次 约 10 分钟后  难度 5.118
+  harbor   [Again] 下次 约 10 分钟后  难度 5.118
 词库没有，跳过：seek
 ```
 

@@ -115,22 +115,22 @@ cd skills/engstory-domain
 V="<your learning vocab path>"; R="<your range vocab path>"
 
 # 1. Write new words (only after user confirmation)
-python scripts/add.py --words "abandon 放弃, coffin 棺材" --vocab "$V"
+python scripts/add.py --words "abandon 放弃, harbor 港口" --vocab "$V"
 
 # 2. Pick 7 target words
 python scripts/pick.py --vocab "$V"
 
 # 3. Build the allowed vocabulary package (before writing a story)
-python scripts/vocab_distill.py --targets "abandon,coffin" --range "$R" --vocab "$V"
+python scripts/vocab_distill.py --targets "abandon,harbor" --range "$R" --vocab "$V"
 
 # 4. Audit a story (mixed mode by default; add --mode english for the legacy rules)
-python scripts/story_audit.py --text "<story text>" --targets "abandon,coffin" --range "$R"
+python scripts/story_audit.py --text "<story text>" --targets "abandon,harbor" --range "$R"
 
 # 5. Mark usage
-python scripts/mark.py --text "<story text>" --words "abandon,coffin" --vocab "$V"
+python scripts/mark.py --text "<story text>" --words "abandon,harbor" --vocab "$V"
 
 # 6. Apply feedback (after the user reports know/don't know)
-python scripts/feedback.py --words "abandon 会, coffin 不会" --vocab "$V"
+python scripts/feedback.py --words "abandon 会, harbor 不会" --vocab "$V"
 ```
 
 All scripts support `--json` output for programmatic use.
@@ -170,8 +170,8 @@ Story loop (strict order):
 {
   "meta": { "marked": { "<text fingerprint sha1>": "2026-08-15T20:00:00+08:00" } },
   "words": {
-    "crypt": {
-      "gloss": "地下室",
+    "harbor": {
+      "gloss": "港口",
       "picks": 3, "last_pick": "2026-07-10T09:00:00+08:00",
       "uses": 1, "texts": 1, "last_use": "2026-07-15T20:00:00+08:00",
       "forms": [], "不会频次": 2,
